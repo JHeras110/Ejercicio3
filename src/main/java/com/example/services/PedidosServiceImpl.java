@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import com.example.dao.PedidosDao;
 import com.example.dto.ProductoDTO;
 import com.example.exceptions.ProductoNoEncontradoException;
+import com.example.exceptions.StockInsuficienteException;
 import com.example.model.Pedido;
 
 /**
@@ -51,15 +52,18 @@ public class PedidosServiceImpl implements PedidosService {
             }
         }
         
-        if(comprobar){
-            pedido = new Pedido(producto.getCodigo(), unidades, unidades * producto.getPrecio(), new Date());
-            dao.save(pedido);
-            
-            producto.setStock(producto.getStock()-unidades);
-            System.out.println(producto);
-            template.put(url2,  producto);
-        }else{
+        if(!comprobar){
             throw new ProductoNoEncontradoException("No hemos encontrado el producto que se llama "+ nombre);
+        }else{
+            if(producto.getStock()>= unidades){
+                pedido = new Pedido(producto.getCodigo(), unidades, unidades * producto.getPrecio(), new Date());
+                dao.save(pedido);
+                
+                producto.setStock(producto.getStock()-unidades);
+                template.put(url2,  producto);
+            }else{
+                throw new StockInsuficienteException("No quedan tantos productos en stock");
+            }
         }
     }
 
