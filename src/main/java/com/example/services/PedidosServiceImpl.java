@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.dao.PedidosDao;
 import com.example.dto.ProductoDTO;
+import com.example.exceptions.ProductoNoEncontradoException;
 import com.example.model.Pedido;
 
 /**
@@ -40,19 +41,26 @@ public class PedidosServiceImpl implements PedidosService {
         List<ProductoDTO> productos = Arrays.asList(template.getForObject(url1, ProductoDTO[].class));
         ProductoDTO producto = new ProductoDTO();
         Pedido pedido;
+        boolean comprobar = false;
 
         for (ProductoDTO productoDTO : productos) {
             if(productoDTO.getNombre().equalsIgnoreCase(nombre)){
                 producto = productoDTO;
+                comprobar=true;
+                break;
             }
         }
         
-        pedido = new Pedido(producto.getCodigo(), unidades, unidades * producto.getPrecio(), new Date());
-        dao.save(pedido);
-        
-        producto.setStock(producto.getStock()-unidades);
-        System.out.println(producto);
-        template.put(url2,  producto);
+        if(comprobar){
+            pedido = new Pedido(producto.getCodigo(), unidades, unidades * producto.getPrecio(), new Date());
+            dao.save(pedido);
+            
+            producto.setStock(producto.getStock()-unidades);
+            System.out.println(producto);
+            template.put(url2,  producto);
+        }else{
+            throw new ProductoNoEncontradoException("No hemos encontrado el producto que se llama "+ nombre);
+        }
     }
 
     /**
